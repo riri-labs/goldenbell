@@ -1701,7 +1701,8 @@ const TUAI_SQ = [
   { text:'TUAI ‘잡 인포 허브’에서 한 화면으로 볼 수 있는 서비스는 모두 몇 가지일까요?', options:['2가지','3가지','4가지','5가지'], answer:2, note:'고용24 통합정보 알림 · 청년정책 알림 · 동명 스포츠 잡 · 진로취업디렉토리북' },
   { text:'다음 중 TUAI 잡 인포 허브 서비스가 아닌 것은?', options:['고용24 통합정보 알림','청년정책 알림','동명 스포츠 잡','학식 메뉴 알림'], answer:3, note:'학식 메뉴는… 아직 없어요 😋' },
   { text:'‘골라 쓰는 취업마스터’에서 고를 수 있는 AI 도구는 모두 몇 가지일까요?', options:['6가지','12가지','18가지','24가지'], answer:2, note:'분석 6종 · 자기소개서 6종 · 면접 6종 = 18가지' },
-  { text:'TUAI에는 내 약점을 강점 표현으로 바꿔 주는 도구가 있다.', options:['O','X'], answer:0, note:'커리어 툴킷 → ‘약점 → 강점 변환’ (방금 미션에서 써 봤죠!)' },
+  { text:'TUAI에는 내 약점을 강점 표현으로 바꿔 주는 도구가 있다.', options:['O','X'], answer:0, note:'방금 진행자 시연에서 본 바로 그 도구예요!' },
+  { text:'‘약점 → 강점 변환’ 도구는 TUAI의 어느 메뉴에 있을까요?', options:['AI 도구','커리어 툴킷','잡 인포 허브','마이노트'], answer:1, note:'커리어 툴킷 → 약점 → 강점 변환 (강점 → 약점 변환도 있어요)' },
   { text:'TUAI에 로그인할 때 아이디로 쓰는 것은?', options:['이메일','휴대폰 번호','학번','카카오 계정'], answer:2, note:'학번으로 회원가입하고 로그인해요' },
 ];
 const TUAI_SLIDES = [
@@ -1718,7 +1719,7 @@ const TUAI_SLIDES = [
   { tag:'③ 커리어 툴킷', title:'진로 선택의 기준을 세워 주는 도구들', chips:[
     ['역량 키워드 사전'], ['약점 → 강점 변환', 1], ['강점 → 약점 변환'], ['직업가치관 사전'], ['면접 질문 의도 분석기'],
     ['학과별 추천 자격증'], ['학과별·학년별 꼭 해야 할 경험'], ['해외취업 워크시트'], ['직업찾기'] ],
-    hot:'🎯 ‘약점 → 강점 변환’은 잠시 후 미션에서 직접 써 봐요!' },
+    hot:'🎤 ‘약점 → 강점 변환’ — 지금 바로 진행자가 시연해요! 내 약점을 말해 주세요' },
   { tag:'④ 잡 인포 허브', title:'매일 자동 수집 · 실시간 업데이트 정보 4종', cards:[
     { ic:'📢', h:'고용24 통합정보 알림', p:'고용24 새 공고·훈련 소식 모아보기' },
     { ic:'🎯', h:'청년정책 알림', p:'청년 지원 정책·지원금 모아보기' },
@@ -1736,7 +1737,7 @@ const TU = {
   build(){
     if (this.steps) return this.steps;
     const s = TUAI_SLIDES.map((_, n) => ({ kind:'slide', n }));
-    s.push({ kind:'mission' }, { kind:'mShow' }, { kind:'sqIntro' });
+    s.push({ kind:'sqIntro' });  // 체험 미션은 사용 안 함 (필요하면 { kind:'mission' }, { kind:'mShow' } 를 앞에 다시 넣기)
     TUAI_SQ.forEach((_, i) => s.push({ kind:'sq', i }, { kind:'sqRev', i }));
     s.push({ kind:'sqRank' });
     return this.steps = s;
@@ -1841,7 +1842,7 @@ const TU = {
   mainLabel(st){
     const L = this.build().length;
     switch (st.kind) {
-      case 'slide': return st.n === TUAI_SLIDES.length - 1 ? '🎯 체험 미션 시작' : '다음 ▶';
+      case 'slide': return st.n === TUAI_SLIDES.length - 1 ? '⚡ 스피드 퀴즈로' : '다음 ▶';
       case 'mission': return '⏹ 미션 마감';
       case 'mShow': return (st.idx || 0) < (st.order?.length || 0) - 1 ? '다음 친구 ▶' : '⚡ 스피드 퀴즈로';
       case 'sqIntro': return '▶ 1번 문제';
@@ -1875,7 +1876,7 @@ const TU = {
     if (st.kind === 'slide') {
       const s = TUAI_SLIDES[st.n];
       let body = '';
-      if (s.qr) body = `<div class="tqrrow"><div class="qrbox" id="tuQr"><div class="noqr">QR 생성 중…</div></div><div class="tqrtxt"><b>tuai.kr</b><p>📱 휴대폰으로 지금 접속해 보세요!</p><p class="hot">📌 학번으로 회원가입해 두면<br>잠시 후 미션을 바로 할 수 있어요</p></div></div>`;
+      if (s.qr) body = `<div class="tqrrow"><div class="qrbox" id="tuQr"><div class="noqr">QR 생성 중…</div></div><div class="tqrtxt"><b>tuai.kr</b><p>📱 휴대폰으로 지금 접속해 보세요!</p><p class="hot">📌 학번으로 회원가입하면<br>모든 기능을 바로 쓸 수 있어요</p></div></div>`;
       if (s.cards) body = `<div class="tgrid" style="--n:${s.cards.length}">${s.cards.map(c => `<div class="tcard"><div class="ic">${c.ic}</div><h3>${esc(c.h)}${c.b ? `<small>${esc(c.b)}</small>` : ''}</h3><p>${esc(c.p)}</p></div>`).join('')}</div>`;
       if (s.chips) body = `<div class="tchips">${s.chips.map(([t, hot]) => `<span class="tchip ${hot ? 'hot' : ''}">${hot ? '⭐ ' : ''}${esc(t)}</span>`).join('')}</div>`;
       return `<span class="ttag">${esc(s.tag)}</span><div class="ttitle">${esc(s.title)}</div>${s.sub ? `<div class="tsub">${esc(s.sub)}</div>` : ''}${body}${s.hot ? `<div class="thot">${esc(s.hot)}</div>` : ''}${dots(TUAI_SLIDES.length, st.n)}`;
@@ -1954,7 +1955,7 @@ const TU = {
     this.pInit();
     const top = pTop(); const me = P.me;
     const link = (url, txt) => `<a class="pbtn tlink" href="${url}" target="_blank" rel="noopener">${txt}</a>`;
-    if (st.kind === 'slide') return setView(`tu|slide`, () => `${top}<div class="pcenter"><div class="bige">🤖</div><span class="chip">TUAI 코너</span><h2>스크린을 봐 주세요!</h2><p>동명대 AI 진로&취업코치 TUAI를 소개해요.<br>잠시 후 미션을 하려면 <b>학번으로 회원가입</b>을 미리 해 두세요.</p>${link(TUAI_URL, '🤖 TUAI 열기')}</div>`);
+    if (st.kind === 'slide') return setView(`tu|slide`, () => `${top}<div class="pcenter"><div class="bige">🤖</div><span class="chip">TUAI 코너</span><h2>스크린을 봐 주세요!</h2><p>동명대 AI 진로&취업코치 TUAI를 소개해요.<br>잠시 후 <b>스피드 퀴즈</b>가 있으니 잘 봐 두세요! ⚡</p></div>`);
     if (st.kind === 'mission') return setView(`tu|mission`, () => `${top}<div class="pbody">
         <div class="pcard"><div class="pqhead"><span class="n">🎯 체험 미션</span><span class="ptimer" id="ptimer"></span></div><div class="pbar"><i id="pbar"></i></div>
         <div class="pq">내 약점을 강점으로 바꿔라!</div>
