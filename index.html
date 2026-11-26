@@ -888,6 +888,9 @@ body:has(#endov:not([style*="none"])) #app{opacity:0;pointer-events:none}
 .mcbtns.ox{grid-template-columns:1fr 1fr}
 .face.front .ans.mcn.oxl{font-family:var(--ui)!important;font-weight:900!important}
 .mcbtns.ox .mcbtn{justify-content:center;font-family:var(--ui);font-weight:900;font-size:44px;min-height:120px;text-align:center}
+/* 정답 해설 (정답 발표 때 스크린·휴대폰에 표시) */
+.qnote{word-break:keep-all;margin-top:14px;font-family:var(--ui);font-weight:700;font-size:clamp(18px,1.6vw,24px);color:var(--yl);line-height:1.45;text-shadow:none}
+.pnote{word-break:keep-all;font-size:14px!important;line-height:1.5;max-width:320px;margin:4px auto 0;opacity:.95}
 </style>
 </head>
 <body>
@@ -979,7 +982,7 @@ const SET3 = [
   {type:'mc', text:'채용절차법상 기업은 지원자에게 부모의 직업이나 재산 정보를 요구할 수 없다.', options:['O','X'], answer:0, time:15, note:'채용절차법 제4조의3에 따라 직무와 무관한 개인정보(용모·출신지역·혼인여부·재산, 가족의 학력·직업·재산)는 요구할 수 없어요(30인 이상 사업장).'},
   {type:'mc', text:'신입 지원자가 직무 관련 실무 경험을 쌓을 수 있도록 고용노동부가 지원하는 사업은?', options:['청년 일경험 지원사업','근로장려금','주택청약종합저축','국민연금 출산크레딧'], answer:0, time:30, note:'기업에서 인턴형·프로젝트형 등으로 실무를 경험하고 참여수당을 받을 수 있어요.'},
   {type:'short', text:'직무와 관련된 작업물·활동 결과물을 모아 정리해 이력서와 함께 내는 자료는? (다섯 글자)', answer:'포트폴리오', accept:'포폴, portfolio, 포트폴리오 자료', time:30, note:'디자인·개발 직무만이 아니에요. 공모전·프로젝트·대외활동 기록도 모두 포트폴리오가 돼요.'},
-  {type:'mc', text:'채용절차법에 따라 최종 불합격한 지원자는 제출한 채용서류를 돌려달라고 요청할 수 있다.', options:['O','X'], answer:0, time:15, note:'30인 이상 사업장이 대상이에요. 홈페이지나 이메일로 낸 서류는 반환 대상이 아니에요.'},
+  {type:'mc', text:'인턴 기간이 끝난 뒤 평가를 거쳐 정규직이 될 기회를 주는 인턴은?', options:['체험형 인턴','채용연계형 인턴','단기 인턴','해외 인턴'], answer:1, time:30, note:'체험형 인턴은 경험 쌓기가 목적이고, 채용연계형 인턴은 평가를 거쳐 정규직으로 전환될 수 있어요. 공고에서 꼭 확인하세요!'},
   {type:'mc', text:'다음 중 진로취업지원센터의 비교과 프로그램이 아닌 것은?', options:['취업캠프','취업아카데미','리본 북페스타','TUAI'], answer:2, time:30, note:'취업캠프·취업아카데미·TUAI는 진로취업지원센터의 비교과 프로그램이에요.'},
   {type:'mc', text:'토익(TOEIC) 같은 어학 성적은 보통 시험 날로부터 몇 년 동안 인정될까요?', options:['1년','2년','3년','5년'], answer:1, time:30, note:'대부분 2년이 지나면 성적표가 효력을 잃어요. 지원 시기에 맞춰 시험 일정을 잡으세요.'},
   {type:'mc', text:"자소서 경험 작성법 'STAR 기법'의 4요소를 순서대로 바르게 나열한 것은?", options:['전략-과제-실행-보고','상황-과제-행동-결과','상황-목표-분석-결과','과제-상황-결과-행동'], answer:1, time:30, note:'상황과 과제를 짧게, 행동과 결과를 구체적으로 쓰는 것이 핵심이에요.'},
@@ -1387,7 +1390,7 @@ function renderStage(st){
       <div class="qnum"><div>${st.question?.num === 0 ? '부활' : 'Q' + qNoLabel(st)}<small>/ ${qTotal(st)}</small></div></div>
       <div class="qtext" style="font-size:${fs}px">${esc(text)}</div>
       ${mc ? `<div class="opts${isOX(pub.options)?' ox':''}">${(pub.options||[]).map((o,i)=>`<div class="opt ${judged ? (i===q?.answer?'right':'dim') : ''}"><b>${CIRC[i]}</b>${esc(o)}</div>`).join('')}</div>` : ''}
-      ${judged && q ? `<div class="judgerow"><div class="answer-banner"><span>정답</span>${esc(answerLabel(q))}</div><div class="resultline" id="resLine"></div></div>` : ''}
+      ${judged && q ? `<div class="judgerow"><div class="answer-banner"><span>정답</span>${esc(answerLabel(q))}</div><div class="resultline" id="resLine"></div></div>${q.note ? `<div class="qnote">💡 ${esc(q.note)}</div>` : ''}` : ''}
       <div class="timer" id="timer">
         <svg viewBox="0 0 120 120"><circle class="bg" cx="60" cy="60" r="50"/><circle class="fg" id="tfg" cx="60" cy="60" r="50" stroke-dasharray="314.16" stroke-dashoffset="0"/></svg>
         <div class="${ph==='question'?'tnum':'tlabel'}" id="tnum">${ph==='question'?'':ph==='locked'?'마감!':ph==='revealed'?'공개!':'채점'}</div>
@@ -1591,7 +1594,7 @@ async function announce(){
   const res = {};
   activePlayers().forEach(p => { res[p.id] = isCorrect(q, ans[p.id]?.v); });
   await Store.set(roomPath(`results/${st.q}`), Object.keys(res).length ? res : null);
-  await Store.update(roomPath('state'), { phase:'judged', answerText: answerLabel(q) });
+  await Store.update(roomPath('state'), { phase:'judged', answerText: answerLabel(q), note: q.note || '' });
   const vals = Object.values(res);
   // 마지막(골든벨) 문제를 맞힌 사람이 있으면 정답 팡파르
   if (vals.some(Boolean)) (st.q === st.total - 1 ? Snd.victory() : Snd.ding()); else Snd.buzz();
@@ -1904,8 +1907,8 @@ function renderPlayer(){
     const ok = P.myRes === true;
     return setView(`judged|${st.q}|${ok}`, () => {
       try { navigator.vibrate?.(ok ? [60,40,60] : [300]); } catch(e){}
-      if (revQ) return `<div class="player ${ok?'rev-bg':'no-bg'}" style="min-height:100dvh">${pTop()}<div class="pcenter">${ok ? RES('rev','revive') : RES('no','x')}<h2>${ok?'부활 성공!':'아쉬워요…'}</h2><p>${ok ? '다시 살아났어요! 다음 문제부터 함께해요.' : '이번엔 부활하지 못했어요.<br>스크린으로 함께 풀어 봐요!'}</p><p style="font-size:14px">정답: ${esc(st.answerText||'')}</p></div></div>`;
-      return `<div class="player ${ok?'ok-bg':'no-bg'}" style="min-height:100dvh">${pTop()}<div class="pcenter">${ok ? RES('ok','check') : RES('no','x')}<h2>${ok?'정답!':'아쉬워요…'}</h2><p>${ok ? '다음 문제도 화이팅!' : elim ? '이번 문제로 탈락이에요.<br>패자부활이 있을 수도 있으니 기다려 봐요!' : '다음 문제에서 만회해요!'}</p><p style="font-size:14px">정답: ${esc(st.answerText||'')}</p></div></div>`;
+      if (revQ) return `<div class="player ${ok?'rev-bg':'no-bg'}" style="min-height:100dvh">${pTop()}<div class="pcenter">${ok ? RES('rev','revive') : RES('no','x')}<h2>${ok?'부활 성공!':'아쉬워요…'}</h2><p>${ok ? '다시 살아났어요! 다음 문제부터 함께해요.' : '이번엔 부활하지 못했어요.<br>스크린으로 함께 풀어 봐요!'}</p><p style="font-size:14px">정답: ${esc(st.answerText||'')}</p>${st.note ? `<p class="pnote">💡 ${esc(st.note)}</p>` : ''}</div></div>`;
+      return `<div class="player ${ok?'ok-bg':'no-bg'}" style="min-height:100dvh">${pTop()}<div class="pcenter">${ok ? RES('ok','check') : RES('no','x')}<h2>${ok?'정답!':'아쉬워요…'}</h2><p>${ok ? '다음 문제도 화이팅!' : elim ? '이번 문제로 탈락이에요.<br>패자부활이 있을 수도 있으니 기다려 봐요!' : '다음 문제에서 만회해요!'}</p><p style="font-size:14px">정답: ${esc(st.answerText||'')}</p>${st.note ? `<p class="pnote">💡 ${esc(st.note)}</p>` : ''}</div></div>`;
     }, true);
   }
   if (revQ && P.me.alive !== false) return setView(`rest|${st.q}`, () => `${pTop()}<div class="pcenter"><div class="bige">☕</div><span class="revbadge">♻️ 패자부활전</span><h2>잠깐 쉬어 가요!</h2><p>지금은 탈락자들이 부활에 도전하는 중이에요.<br>살아남은 친구는 다음 문제를 기다려 주세요.</p></div>`);
