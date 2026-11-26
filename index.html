@@ -1050,6 +1050,50 @@ const Snd = {
   ding(){ this.tone(880,.5,'sine',.25); this.tone(1320,.6,'sine',.15,.08); },
   buzz(){ this.tone(140,.45,'square',.12); },
   bell(){ if(!this.on) return; [0,.9,1.8].forEach(w=>{ [1,2.76,5.4,8.93].forEach((m,i)=>this.tone(660*m, 2.2-i*.4, 'sine', .22/(i+1), w)); }); },
+  // 팡파르용 합성 도구 (압축기로 소리 깨짐 방지)
+  kit(){
+    const c=this.c(); if(!c) return null;
+    const bus=c.createDynamicsCompressor(); bus.threshold.value=-14; bus.ratio.value=4;
+    const master=c.createGain(); master.gain.value=.6; bus.connect(master).connect(c.destination);
+    const noiseBuf=(sec)=>{ const n=Math.floor(c.sampleRate*sec), b=c.createBuffer(1,n,c.sampleRate), d=b.getChannelData(0); for(let i=0;i<n;i++) d[i]=Math.random()*2-1; return b; };
+    const noise=(t,d,g,type,freq,q=1)=>{ const s=c.createBufferSource(); s.buffer=noiseBuf(d+.05); const f=c.createBiquadFilter(); f.type=type; f.frequency.value=freq; f.Q.value=q; const a=c.createGain(); a.gain.setValueAtTime(g,t); a.gain.exponentialRampToValueAtTime(.0001,t+d); s.connect(f).connect(a).connect(bus); s.start(t); s.stop(t+d+.05); };
+    const osc=(f,t,d,type,g,att=.01,cut=0)=>{ const o=c.createOscillator(), a=c.createGain(); o.type=type; o.frequency.setValueAtTime(f,t); a.gain.setValueAtTime(.0001,t); a.gain.exponentialRampToValueAtTime(g,t+att); a.gain.setValueAtTime(g,t+Math.max(att,d*.6)); a.gain.exponentialRampToValueAtTime(.0001,t+d); let n=o; if(cut){ const lp=c.createBiquadFilter(); lp.type='lowpass'; lp.frequency.setValueAtTime(cut*.5,t); lp.frequency.exponentialRampToValueAtTime(cut,t+att+.05); o.connect(lp); n=lp; } n.connect(a).connect(bus); o.start(t); o.stop(t+d+.05); };
+    const brass=(fs,t,d,g=.09)=>fs.forEach(f=>{ osc(f,t,d,'sawtooth',g,.03,2600); osc(f*1.006,t,d,'sawtooth',g*.6,.03,2200); });
+    const N=n=>440*Math.pow(2,(n-69)/12); // MIDI 번호 → 주파수
+    const crash=(t,g=.5)=>{ noise(t,1.8,g,'highpass',5000); noise(t,.25,.6,'lowpass',150); osc(55,t,.35,'sine',.5); };
+    const roll=(t,len=26)=>{ for(let i=0;i<len;i++){ const k=i/len; noise(t,.08,.35+.65*k,'bandpass',1500,.4); osc(180,t,.06,'triangle',.12+.2*k); t+=.075-.035*k; } return t; };
+    return { t0:c.currentTime+.05, noise, osc, brass, N, crash, roll };
+  },
+  // 최종 결과 화면 축하 음악 (약 8초): 드럼롤 → 심벌 → 금관 팡파르 + 8비트 멜로디 → 피날레 (직접 작곡·합성)
+  fanfare(){
+    if(!this.on) return; const k=this.kit(); if(!k) return; const { noise, osc, brass, N, crash, roll } = k;
+    const T=roll(k.t0)+.05; crash(T);
+    const C4=[N(60),N(64),N(67),N(72)], F4=[N(60),N(65),N(69),N(72)], G4=[N(62),N(67),N(71),N(74)], C5=[N(64),N(67),N(72),N(76)];
+    [[C4,0,.16],[C4,.2,.16],[C4,.4,.16],[C4,.6,.9],[F4,1.6,.4],[G4,2.05,.4],[C5,2.5,1.4]].forEach(([ch,w,d])=>brass(ch,T+w,d));
+    const mel=[[72,0],[76,.2],[79,.4],[84,.6],[83,1.6],[81,1.8],[79,2.05],[81,2.25],[84,2.5]];
+    mel.forEach(([n,w],i)=>osc(N(n),T+w,i===mel.length-1?1.2:.18,'square',.06));
+    [[48,0],[48,.6],[53,1.6],[55,2.05],[48,2.5]].forEach(([n,w])=>{ osc(N(n),T+w,.4,'triangle',.25); osc(60,T+w,.2,'sine',.45); });
+    // 피날레: 빠른 8비트 상승 → 다-다-다-따안! (종소리 대신)
+    const A=T+3.3; [72,76,79,84,88,91,96].forEach((n,i)=>osc(N(n),A+i*.06,.3,'square',.04));
+    const Ab=[N(68),N(72),N(75),N(80)], Bb=[N(70),N(74),N(77),N(82)], C6=[N(72),N(76),N(79),N(84)];
+    [[Ab,.5,.22],[Bb,.75,.22],[C6,1.0,2.4]].forEach(([ch,w,d])=>brass(ch,A+w,d,.08));
+    [[68,.5],[70,.75],[72,1.0]].forEach(([n,w])=>{ osc(N(n-24),A+w,w===1?1.6:.25,'triangle',.28); osc(60,A+w,.2,'sine',.45); });
+    [84,88,91,96,91,96,100].forEach((n,i)=>osc(N(n),A+1.0+i*.11,.2,'square',.035));
+    crash(A+1.0,.45); noise(A+1.0,2.6,.25,'highpass',7000);
+  },
+  // 골든벨(마지막) 문제 정답 팡파르 (약 4초): 8비트 상승 → 심벌 → 금관 "빠바바밤!" (직접 작곡·합성)
+  victory(){
+    if(!this.on) return; const k=this.kit(); if(!k) return; const { noise, osc, brass, N, crash } = k;
+    const t=k.t0;
+    [67,71,74,79,83,86,91].forEach((n,i)=>osc(N(n),t+i*.05,.16,'square',.05));
+    const T=t+.4; crash(T,.4);
+    const G=[N(55),N(59),N(62),N(67)], C=[N(60),N(64),N(67),N(72)], D=[N(62),N(66),N(69),N(74)], Gh=[N(67),N(71),N(74),N(79)];
+    [[G,0,.14],[G,.16,.14],[C,.32,.14],[D,.48,.5],[Gh,1.05,2.2]].forEach(([ch,w,d])=>brass(ch,T+w,d,.085));
+    [[79,0],[79,.16],[84,.32],[86,.48],[91,1.05]].forEach(([n,w],i)=>osc(N(n),T+w,i===4?1.8:.14,'square',.06));
+    [[43,0],[48,.32],[50,.48],[43,1.05]].forEach(([n,w])=>{ osc(N(n),T+w,w>1?1.4:.3,'triangle',.28); osc(60,T+w,.2,'sine',.45); });
+    [91,95,98,103,98,103,107].forEach((n,i)=>osc(N(n),T+1.05+i*.1,.18,'square',.03));
+    crash(T+1.05,.45); noise(T+1.05,2.2,.22,'highpass',7000);
+  },
 };
 
 /* ---------------- data store (Firebase or local demo) ---------------- */
@@ -1265,7 +1309,7 @@ function renderHost(){
     if (ph==='question') Snd.start();
     if (ph==='locked') Snd.lock();
     if (ph==='revealed') Snd.flip();
-    if (ph==='end') { Snd.bell(); }
+    if (ph==='end') { Snd.fanfare(); }
   }
   H.prevPhase = key;
 
@@ -1541,7 +1585,8 @@ async function announce(){
   await Store.set(roomPath(`results/${st.q}`), Object.keys(res).length ? res : null);
   await Store.update(roomPath('state'), { phase:'judged', answerText: answerLabel(q) });
   const vals = Object.values(res);
-  if (vals.some(Boolean)) Snd.ding(); else Snd.buzz();
+  // 마지막(골든벨) 문제를 맞힌 사람이 있으면 정답 팡파르
+  if (vals.some(Boolean)) (st.q === st.total - 1 ? Snd.victory() : Snd.ding()); else Snd.buzz();
 }
 
 async function applyAndNext(){
@@ -2239,7 +2284,7 @@ const TU = {
       st.fast = this.fastest(s.i).slice(0, 5);
       st.fast.length ? Snd.ding() : Snd.buzz();
     }
-    if (s.kind === 'sqRank') { const r = this.ranking(); st.top = r.slice(0, 10); st.ranks = Object.fromEntries(r.map((p, i) => [p.id, i + 1])); Snd.bell(); }
+    if (s.kind === 'sqRank') { const r = this.ranking(); st.top = r.slice(0, 10); st.ranks = Object.fromEntries(r.map((p, i) => [p.id, i + 1])); Snd.victory(); }
     if (prev.phase !== 'tuai') st.back = { phase: prev.phase === 'end' ? 'end' : 'lobby' };
     else st.back = prev.back || { phase:'lobby' };
     H.tuLocking = false;
