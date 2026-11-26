@@ -34,7 +34,7 @@
   - `SAMPLE`(1세트), `SET2`(2세트), `SET3`(1탄 · 입사 로드맵), `SET4`(2탄 · 트렌드 결산), `SETS` — 기본 문제 세트. 각 문제는 `{type:'mc'|'short', text, options, answer, accept, time, revival, note}`
     - `mc`: 4지선다, `answer`는 0~3 인덱스
     - O/X 문제: `type:'mc'`에 `options:['O','X']`(보기 2개), `answer`는 O=0 · X=1. 화면에 큰 O·X 버튼으로 나옴
-    - `note`: 정답 해설(진행자 멘트용 메모, 화면에는 안 나옴)
+    - `note`: 정답 해설. 정답 발표 때 스크린(문제 카드 아래 💡)과 학생 휴대폰 결과 화면에 함께 나옴
     - `short`: 주관식, `accept`에 쉼표로 다른 정답 표기 허용
     - `revival:true`: 패자부활 문제
   - `CHARS`, `COLORS` — 학생이 고르는 캐릭터 이모지와 색
