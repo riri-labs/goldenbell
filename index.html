@@ -1050,6 +1050,35 @@ const Snd = {
   ding(){ this.tone(880,.5,'sine',.25); this.tone(1320,.6,'sine',.15,.08); },
   buzz(){ this.tone(140,.45,'square',.12); },
   bell(){ if(!this.on) return; [0,.9,1.8].forEach(w=>{ [1,2.76,5.4,8.93].forEach((m,i)=>this.tone(660*m, 2.2-i*.4, 'sine', .22/(i+1), w)); }); },
+  // 최종 결과(골든벨) 축하 음악: 드럼롤 → 심벌 → 금관 팡파르 + 8비트 멜로디 + 종소리 (약 9초, 직접 작곡·합성)
+  fanfare(){
+    if(!this.on) return; const c=this.c(); if(!c) return;
+    const t0=c.currentTime+.05;
+    const bus=c.createDynamicsCompressor(); bus.threshold.value=-14; bus.ratio.value=4;
+    const master=c.createGain(); master.gain.value=.6; bus.connect(master).connect(c.destination);
+    const noiseBuf=(sec)=>{ const n=Math.floor(c.sampleRate*sec), b=c.createBuffer(1,n,c.sampleRate), d=b.getChannelData(0); for(let i=0;i<n;i++) d[i]=Math.random()*2-1; return b; };
+    const noise=(t,d,g,type,freq,q=1)=>{ const s=c.createBufferSource(); s.buffer=noiseBuf(d+.05); const f=c.createBiquadFilter(); f.type=type; f.frequency.value=freq; f.Q.value=q; const a=c.createGain(); a.gain.setValueAtTime(g,t); a.gain.exponentialRampToValueAtTime(.0001,t+d); s.connect(f).connect(a).connect(bus); s.start(t); s.stop(t+d+.05); };
+    const osc=(f,t,d,type,g,att=.01,cut=0)=>{ const o=c.createOscillator(), a=c.createGain(); o.type=type; o.frequency.setValueAtTime(f,t); a.gain.setValueAtTime(.0001,t); a.gain.exponentialRampToValueAtTime(g,t+att); a.gain.setValueAtTime(g,t+Math.max(att,d*.6)); a.gain.exponentialRampToValueAtTime(.0001,t+d); let n=o; if(cut){ const lp=c.createBiquadFilter(); lp.type='lowpass'; lp.frequency.setValueAtTime(cut*.5,t); lp.frequency.exponentialRampToValueAtTime(cut,t+att+.05); o.connect(lp); n=lp; } n.connect(a).connect(bus); o.start(t); o.stop(t+d+.05); };
+    const brass=(fs,t,d,g=.09)=>fs.forEach(f=>{ osc(f,t,d,'sawtooth',g,.03,2600); osc(f*1.006,t,d,'sawtooth',g*.6,.03,2200); });
+    const N=n=>440*Math.pow(2,(n-69)/12); // MIDI 번호 → 주파수
+    // 1) 드럼롤 1.4초 (점점 빨라지고 커짐) + 심벌
+    let t=t0; for(let i=0;i<26;i++){ const k=i/26; noise(t,.08,.35+.65*k,'bandpass',1500,.4); osc(180,t,.06,'triangle',.12+.2*k); t+=.075-.035*k; }
+    const T=t0+1.45; noise(T,1.8,.5,'highpass',5000); noise(T,.25,.6,'lowpass',150); osc(55,T,.35,'sine',.5);
+    // 2) 금관 팡파르: 따-다-다 따아~ (C장조 → F → G → C)
+    const C4=[N(60),N(64),N(67),N(72)], F4=[N(60),N(65),N(69),N(72)], G4=[N(62),N(67),N(71),N(74)], C5=[N(64),N(67),N(72),N(76)];
+    [[C4,0,.16],[C4,.2,.16],[C4,.4,.16],[C4,.6,.9],[F4,1.6,.4],[G4,2.05,.4],[C5,2.5,1.6]].forEach(([ch,w,d])=>brass(ch,T+w,d));
+    // 3) 8비트 멜로디 (우주 오락실 느낌)
+    const mel=[[72,0],[76,.2],[79,.4],[84,.6],[83,1.6],[81,1.8],[79,2.05],[81,2.25],[84,2.5]];
+    mel.forEach(([n,w],i)=>osc(N(n),T+w,i===mel.length-1?1.4:.18,'square',.06));
+    // 4) 베이스 + 킥
+    [[48,0],[48,.6],[53,1.6],[55,2.05],[48,2.5]].forEach(([n,w])=>{ osc(N(n),T+w,.4,'triangle',.25); osc(60,T+w,.2,'sine',.45); });
+    // 5) 반짝이는 아르페지오 (승리 마무리)
+    const A=T+3.7; [72,76,79,84,88,91,96].forEach((n,i)=>osc(N(n),A+i*.07,.5,'square',.035));
+    noise(A+.5,2.2,.35,'highpass',6000);
+    // 6) 골든벨 종소리 3번 (마지막에 크게)
+    [0,.9,1.8].forEach(w=>[1,2.76,5.4,8.93].forEach((m,i)=>osc(660*m,A+.6+w,2.4-i*.4,'sine',.2/(i+1),.005)));
+    brass(C5,A+2.4,2.2,.07);
+  },
 };
 
 /* ---------------- data store (Firebase or local demo) ---------------- */
@@ -1265,7 +1294,7 @@ function renderHost(){
     if (ph==='question') Snd.start();
     if (ph==='locked') Snd.lock();
     if (ph==='revealed') Snd.flip();
-    if (ph==='end') { Snd.bell(); }
+    if (ph==='end') { Snd.fanfare(); }
   }
   H.prevPhase = key;
 
