@@ -1883,8 +1883,10 @@ function renderPlayer(){
   // locked / revealed / judged(no result yet)
   const a = P.myAns?.v;
   const txt = a == null || a === '' ? '무응답' : pub.type==='mc' ? (isOX(pub.options) ? (pub.options[a] ?? '') : `${Number(a)+1}번 · ${pub.options?.[a]??''}`) : a;
-  const label = ph==='locked' ? '답안 마감!' : ph==='revealed' ? '보드를 들어요! 🙌' : '채점 중…';
-  return setView(`show|${st.q}|${ph}|${txt}`, () => `${pTop()}<div class="pcenter"><h2>${label}</h2><div class="minib" style="--c:${c}">${esc(txt)}</div><p>${ph==='locked'?'곧 보드를 공개합니다. 스크린을 보세요!':'스크린에서 정답을 확인하세요'}</p></div>`);
+  // 답안 마감 → '보드를 들어요!', 보드 공개 → '정답 공개!', 정답 발표 직전 → '채점 중…'
+  const label = ph==='locked' ? '보드를 들어요! 🙌' : ph==='revealed' ? '정답 공개! 👀' : '채점 중…';
+  const sub = ph==='locked' ? '답안이 마감됐어요.<br>내 보드가 곧 스크린에 공개돼요!' : ph==='revealed' ? '스크린에서 정답을 확인하세요!' : '잠시만 기다려 주세요';
+  return setView(`show|${st.q}|${ph}|${txt}`, () => `${pTop()}<div class="pcenter"><h2>${label}</h2><div class="minib" style="--c:${c}">${esc(txt)}</div><p>${sub}</p></div>`);
 }
 
 function setView(key, htmlFn, full, after){
